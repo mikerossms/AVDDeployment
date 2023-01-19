@@ -114,7 +114,7 @@ resource LAWorkspace 'Microsoft.OperationalInsights/workspaces@2022-10-01' exist
 }
 
 //Create storage account for the boot diagnostics
-module ADVMBootDiag '../MSResourceModules/modules/Microsoft.Storage/storageAccounts/deploy.bicep' = {
+module ADVMBootDiag '../ResourceModules/modules/Microsoft.Storage/storageAccounts/deploy.bicep' = {
   name: 'ADVMBootDiag'
   scope: IDRG
   params: {
@@ -141,7 +141,7 @@ resource scriptStorage 'Microsoft.Storage/storageAccounts@2022-09-01' existing =
 }
 
 //Create the AD virtual machine (configure as primary)
-module ADVM1 '../MSResourceModules/modules/Microsoft.Compute/virtualMachines/deploy.bicep' = {
+module ADVM1 '../ResourceModules/modules/Microsoft.Compute/virtualMachines/deploy.bicep' = {
   name: 'ADVM1'
   scope: IDRG
   params: {
@@ -222,7 +222,7 @@ module ADVM1 '../MSResourceModules/modules/Microsoft.Compute/virtualMachines/dep
 }
 
 //GRant the VM access to the scriptStorage blobs via an RG RBAC
-module GrantRBACStorageBlobReader '../MSResourceModules/modules/Microsoft.Authorization/roleAssignments/resourceGroup/deploy.bicep' = {
+module GrantRBACStorageBlobReader '../ResourceModules/modules/Microsoft.Authorization/roleAssignments/resourceGroup/deploy.bicep' = {
   name: 'GrantRBACStorageBlobReader'
   scope: IDRG
   params: {

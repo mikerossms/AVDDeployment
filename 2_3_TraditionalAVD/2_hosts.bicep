@@ -137,7 +137,7 @@ resource avdSubnet 'Microsoft.Network/virtualNetworks/subnets@2022-07-01' existi
 }
 
 //Create the AVD Host Boot Diagnostics storage account
-module AVDHostBootDiag '../MSResourceModules/modules/Microsoft.Storage/storageAccounts/deploy.bicep' = {
+module AVDHostBootDiag '../ResourceModules/modules/Microsoft.Storage/storageAccounts/deploy.bicep' = {
   name: 'AVDHostBootDiag'
   scope: RGAVDSTD
   params: {
@@ -153,7 +153,7 @@ module AVDHostBootDiag '../MSResourceModules/modules/Microsoft.Storage/storageAc
 
 
 //Create the VM hosts
-module AVDSTD '../MSResourceModules/modules/Microsoft.Compute/virtualMachines/deploy.bicep' = [for i in range(0,hostPoolHostsToCreate): {
+module AVDSTD '../ResourceModules/modules/Microsoft.Compute/virtualMachines/deploy.bicep' = [for i in range(0,hostPoolHostsToCreate): {
   name: '${hostPoolHostNamePrefix}-${i+hostPoolHostsCurrentInstances}'
   scope: RGAVDSTD
   params: {

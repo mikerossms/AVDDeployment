@@ -76,7 +76,7 @@ resource InfraRG 'Microsoft.Resources/resourceGroups@2022-09-01' = {
 }
 
 //Deploy Log Analytics (using MS defined resource modules - https://github.com/Azure/ResourceModules/tree/main/modules/Microsoft.OperationalInsights/workspaces )
-module LAWorkspace '../MSResourceModules/modules/microsoft.operationalinsights/workspaces/deploy.bicep' = {
+module LAWorkspace '../ResourceModules/modules/microsoft.operationalinsights/workspaces/deploy.bicep' = {
   name: 'LAWorkspace'
   scope: LAWRG
   params: {
@@ -90,7 +90,7 @@ module LAWorkspace '../MSResourceModules/modules/microsoft.operationalinsights/w
 
 //Deploy the boundary virtual network components
 //Create the boundary Bastion NSG and required rules
-module boundaryBastionNSG '../MSResourceModules/modules/Microsoft.Network/networkSecurityGroups/deploy.bicep' = {
+module boundaryBastionNSG '../ResourceModules/modules/Microsoft.Network/networkSecurityGroups/deploy.bicep' = {
   name: 'boundaryNSGBastion'
   scope: InfraRG
   params: {
@@ -223,7 +223,7 @@ module boundaryBastionNSG '../MSResourceModules/modules/Microsoft.Network/networ
 }
 
 //Create the boundary VNET and subnets
-module boundaryVnet '../MSResourceModules/modules/Microsoft.Network/virtualNetworks/deploy.bicep' = {
+module boundaryVnet '../ResourceModules/modules/Microsoft.Network/virtualNetworks/deploy.bicep' = {
   name: 'boundaryVnet'
   scope: InfraRG
   params: {
@@ -252,7 +252,7 @@ module boundaryVnet '../MSResourceModules/modules/Microsoft.Network/virtualNetwo
 
 
 //Create a Basic Bastion
-module boundaryBastion '../MSResourceModules/modules/Microsoft.Network/bastionHosts/deploy.bicep' = if (DeployBastion) {
+module boundaryBastion '../ResourceModules/modules/Microsoft.Network/bastionHosts/deploy.bicep' = if (DeployBastion) {
   name: 'boundaryBastion'
   scope: InfraRG
   params: {

@@ -67,7 +67,7 @@ resource LAWorkspace 'Microsoft.OperationalInsights/workspaces@2022-10-01' exist
 }
 
 //Create the storage account required for the script which will build the ADDS server
-module RepoStorage '../../MSResourceModules/modules/Microsoft.Storage/storageAccounts/deploy.bicep' = if (deployRepo) {
+module RepoStorage '../../ResourceModules/modules/Microsoft.Storage/storageAccounts/deploy.bicep' = if (deployRepo) {
   name: 'RepoStorage'
   scope: RGImages
   params: {
@@ -121,7 +121,7 @@ module RepoStorage '../../MSResourceModules/modules/Microsoft.Storage/storageAcc
 }
 
 //Build the Compute Gallery
-module galleries '../../MSResourceModules/modules/Microsoft.Compute/galleries/deploy.bicep' = {
+module galleries '../../ResourceModules/modules/Microsoft.Compute/galleries/deploy.bicep' = {
   name: computeGalName
   scope: RGImages
   params: {

@@ -134,7 +134,7 @@ resource LAWorkspace 'Microsoft.OperationalInsights/workspaces@2022-10-01' exist
 
 //Deploy the Identity virtual network components so we can build the AD server
 //Create the Identity snet AD NSG and required rules
-module IdentityADNSG '../MSResourceModules/modules/Microsoft.Network/networkSecurityGroups/deploy.bicep' = {
+module IdentityADNSG '../ResourceModules/modules/Microsoft.Network/networkSecurityGroups/deploy.bicep' = {
   name: 'IdentityADNSG'
   scope: IDRG
   params: {
@@ -213,7 +213,7 @@ resource BoundaryVnet 'Microsoft.Network/virtualNetworks@2022-07-01' existing = 
 
 //ADD Service Endpoints for storage to snet
 //Create the Identity VNET and subnets
-module IdentityVnet '../MSResourceModules/modules/Microsoft.Network/virtualNetworks/deploy.bicep' = {
+module IdentityVnet '../ResourceModules/modules/Microsoft.Network/virtualNetworks/deploy.bicep' = {
   name: 'IdentityVnet'
   scope: IDRG
   params: {
@@ -262,7 +262,7 @@ module IdentityVnet '../MSResourceModules/modules/Microsoft.Network/virtualNetwo
 }
 
 //configure Private DNS Zones relevant for this environment and link it to the AD vnet
-module privateDnsZones '../MSResourceModules/modules/Microsoft.Network/privateDnsZones/deploy.bicep' = [for (pdnsName,i) in privateDNSZones  : {
+module privateDnsZones '../ResourceModules/modules/Microsoft.Network/privateDnsZones/deploy.bicep' = [for (pdnsName,i) in privateDNSZones  : {
   name: 'privateDnsZones${i}'
   scope: IDRG
   params: {
@@ -281,7 +281,7 @@ module privateDnsZones '../MSResourceModules/modules/Microsoft.Network/privateDn
 //Set the container to anonymous?  Seems a bit odd, but it does work - needs debugging.
 
 //Create the storage account required for the script which will build the ADDS server
-module ScriptStorage '../MSResourceModules/modules/Microsoft.Storage/storageAccounts/deploy.bicep' = {
+module ScriptStorage '../ResourceModules/modules/Microsoft.Storage/storageAccounts/deploy.bicep' = {
   name: 'ScriptStorage'
   scope: IDRG
   params: {
@@ -332,7 +332,7 @@ module ScriptStorage '../MSResourceModules/modules/Microsoft.Storage/storageAcco
   }
 }
 
-module ADKeyVault '../MSResourceModules/modules/Microsoft.KeyVault/vaults/deploy.bicep' = {
+module ADKeyVault '../ResourceModules/modules/Microsoft.KeyVault/vaults/deploy.bicep' = {
   name: 'ADKeyVault'
   scope: IDRG
   params: {

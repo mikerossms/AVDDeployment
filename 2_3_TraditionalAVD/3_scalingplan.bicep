@@ -154,7 +154,7 @@ resource DesktopHostPool 'Microsoft.DesktopVirtualization/hostPools@2021-07-12' 
 }
 
 //Create the Scaling Plan
-module DesktopScalingPlan '../MSResourceModules/modules/Microsoft.DesktopVirtualization/scalingplans/deploy.bicep' = {
+module DesktopScalingPlan '../ResourceModules/modules/Microsoft.DesktopVirtualization/scalingplans/deploy.bicep' = {
   name: 'DesktopScalingPlan'
   scope: RGAVDSTD
   params: {
