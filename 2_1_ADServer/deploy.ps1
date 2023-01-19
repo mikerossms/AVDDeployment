@@ -73,6 +73,7 @@ $out = New-AzSubscriptionDeployment `
         localenv=$localenv
         location=$localConfig.$localenv.location
         tags=$localConfig.$localenv.tags
+        productShortName=$localConfig.general.productShortName
         IDVnetCIDR=$localConfig.$localenv.idVnetCIDR
         IDSnetADCIDR=$localConfig.$localenv.idSnetADCIDR
         VMADAdminUserName=$localConfig.general.ADUSerName
@@ -125,6 +126,7 @@ if ($deployADServer) {
             localenv=$localenv
             location=$localConfig.$localenv.location
             tags=$localConfig.$localenv.tags
+            productShortName=$localConfig.general.productShortName
             identityADSnetId=$ADSnetId
             DomainName=$localConfig.general.ADDomain
             VMADAdminUserName=$localConfig.general.ADUSerName
@@ -135,11 +137,7 @@ if ($deployADServer) {
             shutdownTime=$localConfig.$localenv.VMADAutoShutdownTime
         }
 
-    $out
-
-    #Storage URI and script should be
-    #Should be: https://qbxstscriptsdev.blob.core.windows.net/scripts/CreateForest.ps1
-
+    #$out
 
     #Restart the azure VM
     Write-Host "Restarting the AD VM" -ForegroundColor Green

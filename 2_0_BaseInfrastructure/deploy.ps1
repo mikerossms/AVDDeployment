@@ -57,6 +57,7 @@ New-AzSubscriptionDeployment -Name "BaseInfrastructure" -Location $localConfig.$
     localenv=$localenv
     location=$localConfig.$localenv.location
     tags=$localConfig.$localenv.tags
+    productShortName=$localConfig.general.productShortName
     boundaryVnetCIDR=$localConfig.$localenv.boundaryVnetCIDR
     boundaryVnetBastionCIDR=$localConfig.$localenv.boundaryVnetBastionCIDR
     deployBastion=$deployBastion
