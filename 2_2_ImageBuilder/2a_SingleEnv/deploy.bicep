@@ -14,8 +14,8 @@ param localenv string = 'dev'
 param location string = 'uksouth'
 
 @maxLength(4)
-@description('Product Short Name e.g. QBX - no more than 4 characters')
-param productShortName string = 'QBX'
+@description('Product Short Name e.g. TST - no more than 4 characters')
+param productShortName string = ''
 
 @description('Name of the company owning the resources')
 param owner string = 'Quberatron'
