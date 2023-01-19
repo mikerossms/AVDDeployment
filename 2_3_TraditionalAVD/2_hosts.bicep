@@ -2,6 +2,8 @@
 // this will build a number of hosts, add them to the domain and then create and add them to the host pool
 // it will also create a scheduler to scale the solution up and down.
 
+//Note: NetworkWatcherAgent is set to false as it seems ot have a 50/50 change of failing.
+
 targetScope = 'subscription'
 
 //Parameters
@@ -16,8 +18,8 @@ param localenv string = 'dev'
 param location string = 'uksouth'
 
 @maxLength(4)
-@description('Product Short Name e.g. TST - no more than 4 characters')
-param productShortName string = ''
+@description('Product Short Name e.g. QBX - no more than 4 characters')
+param productShortName string
 
 @description('Tags to be applied to all resources')
 param tags object = {
@@ -117,6 +119,7 @@ resource ComputeGallery 'Microsoft.Compute/galleries@2022-03-03' existing = {
   scope: resourceGroup(gallerySubscriptionId,galleryRG)
 }
 
+//Pull in the Compute Gallery Image
 resource ComputeGalleryImage 'Microsoft.Compute/galleries/images@2022-03-03' existing = {
   name: galleryImageName
   parent: ComputeGallery
@@ -164,6 +167,12 @@ module AVDSTD '../MSResourceModules/modules/Microsoft.Compute/virtualMachines/de
     imageReference: {
       id: ComputeGalleryImage.id
     }
+    // imageReference: {
+    //   offer: 'office-365'
+    //   publisher: 'MicrosoftWindowsDesktop'
+    //   sku: 'win10-22h2-avd-m365-g2'
+    //   version: 'latest'
+    // }
     osDisk: {
       name: 'osdisk'
       caching: 'ReadWrite'
@@ -233,7 +242,7 @@ module AVDSTD '../MSResourceModules/modules/Microsoft.Compute/virtualMachines/de
     }
 
     extensionNetworkWatcherAgentConfig: {
-      enabled: true
+      enabled: false
     }
 
     extensionDSCConfig: {

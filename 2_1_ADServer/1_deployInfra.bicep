@@ -358,17 +358,27 @@ module ADKeyVault '../MSResourceModules/modules/Microsoft.KeyVault/vaults/deploy
         }
       ]
     }
-    privateEndpoints: [
-      {
-        privateDnsZoneGroup: {
-          privateDNSResourceIds: [
-            privateDnsZones[3].outputs.resourceId
-          ]
+    networkAcls: {
+      bypass: 'AzureServices'
+      defaultAction: 'Deny'
+      virtualNetworkRules: [
+        {
+          id: IdentityVnet.outputs.subnetResourceIds[indexOf(IdentityVnet.outputs.subnetNames, IDSnetADName)]
+          ignoreMissingVnetServiceEndpoint: false
         }
-        service: 'vault'
-        subnetResourceId: IdentityVnet.outputs.subnetResourceIds[indexOf(IdentityVnet.outputs.subnetNames, IDSnetADName)]
-      }
-    ]
+      ]
+    }
+    // privateEndpoints: [
+    //   {
+    //     privateDnsZoneGroup: {
+    //       privateDNSResourceIds: [
+    //         privateDnsZones[3].outputs.resourceId
+    //       ]
+    //     }
+    //     service: 'vault'
+    //     subnetResourceId: IdentityVnet.outputs.subnetResourceIds[indexOf(IdentityVnet.outputs.subnetNames, IDSnetADName)]
+    //   }
+    // ]
   }
 }
 
