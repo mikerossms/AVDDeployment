@@ -26,7 +26,7 @@ param tags object = {
 }
 
 @description('The name of the resource group to create for the common image builder components')
-param RGAVDName string = toUpper('${productShortName}-RG-AVD-STD-${localenv}')
+param RGAVDName string = toUpper('${productShortName}-RG-AVD-EPH-${localenv}')
 
 //LAW Resource Group name
 @description ('The name of the Log Analytics Workspace Resource Group')
@@ -45,7 +45,7 @@ param hostPoolName string = toLower('${productShortName}-HP-${localenv}')
 param hostPoolFriendlyName string = '${productShortName}-Desktop-${localenv}'
 
 @description('The description of the host pool')
-param hostPoolDescription string = 'The ${productShortName} standard desktop host pool'
+param hostPoolDescription string = 'The ${productShortName} ephemeral desktop host pool'
 
 @description('The name of the host pools application group')
 param hostPoolAppGroupName string = toLower('${productShortName}-HP-AG-${localenv}')
@@ -71,8 +71,8 @@ param hostPoolMaxSessionLimit int = 100
 @description('The load balancer type to use for the host pool') 
 param hostPoolLoadBalancerType string = 'BreadthFirst'
 
-@description('The time in minutes before a token expires')
-param hostPoolTokenExpiryTime string = 'PT12H'
+@description('The time in minutes before a token expires.  This needs to be equal to at least the length of time between maintenance windows')
+param hostPoolTokenExpiryTime string = 'P30D'
 
 @description('The type of disk to use for the host pool VMs')
 param hostPoolVMDiskType string = 'StandardSSD_LRS'
@@ -80,11 +80,16 @@ param hostPoolVMDiskType string = 'StandardSSD_LRS'
 @description('The prefix to use for the host names')
 param hostPoolHostNamePrefix string = toLower('${productShortName}avdstd')
 
+//VMs used must support both Gen 2 and Ephemeral Disks - DS and ES series
+//e.g. Standard_E2ads_v5 (amd) Standard_E2d_v5 (intel)
+//e.g. Standard_D2ads_v5 (amd) Standard_D2d_v5 (intel)
+
 param hostPoolVMSize object = {
-  id: 'Standard_D2s_v3'
+  id: 'Standard_E2ads_v5'
   cores: 2
-  ram: 8
+  ram: 16
 }
+
 
 //Active Directory Settings
 @description('The name of the AD domain to join the hosts to')
@@ -99,13 +104,13 @@ param adServerIPAddresses array = [
 param avdVnetName string = toLower('${productShortName}-vnet-${localenv}')
 
 @description('The address space of the virtual network')
-param avdVnetCIDR string = '10.245.16.1/24'
+param avdVnetCIDR string = '10.245.17.1/24'
 
 @description('The name of the AVD Host subnet to create')
 param avdSubnetName string = toLower('${productShortName}-snet-avdhost-${localenv}')
 
 @description('The CIDR of the AVD Host subnet to create')
-param avdSubnetCIDR string = '10.245.16.1/24'
+param avdSubnetCIDR string = '10.245.17.1/24'
 
 @description('The Name of the NSG to apply to the AVD Host subnet')
 param avdNSGName string = toLower('${productShortName}-nsg-avdhost-${localenv}')

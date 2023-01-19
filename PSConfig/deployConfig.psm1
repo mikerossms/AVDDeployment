@@ -40,6 +40,21 @@ function Get-Config {
                     appGroupName = "$product-ag-avdstd-dev".ToLower()
                     workspaceName = "$product-ws-avdstd-dev".ToLower()
                 }
+                avdeph = @{
+                    prefix = "qbxavdephd"
+                    ou = "OU=DEV,OU=AVDEph,$($ADBaseDesktopOU)"
+                    image = "QBXDesktop"
+                    rdpProperties = "audiocapturemode:i:1;audiomode:i:0;drivestoredirect:s:;redirectclipboard:i:1;redirectcomports:i:0;redirectprinters:i:1;redirectsmartcards:i:1;screen mode id:i:2;autoreconnection enabled:i:1;bandwidthautodetect:i:1;networkautodetect:i:1;compression:i:1;videoplaybackmode:i:1;redirectlocation:i:0;redirectwebauthn:i:1;use multimon:i:1;dynamic resolution:i:1"
+                    hostPoolName = "$($product)-hp-avdeph-dev".ToLower()
+                    hostPoolRG = "$product-RG-AVD-EPH-DEV".ToUpper()
+                    vnetName = "$product-vnet-avdeph-dev".ToLower()
+                    vnetCIDR = '10.245.17.0/24'
+                    snetName = "$product-snet-avdeph-dev".ToLower()
+                    snetCIDR = '10.245.17.0/24'
+                    nsgName = "$product-nsg-avdeph-dev".ToLower()
+                    appGroupName = "$product-ag-avdeph-dev".ToLower()
+                    workspaceName = "$product-ws-avdeph-dev".ToLower()
+                }
             }
         }
 
@@ -64,11 +79,11 @@ function Get-Config {
             repoStorageName = "$($product)stbuilderrepoprod".ToLower()
             desktops = @{
                 avdstd = @{
-                    prefix = "qbxavdstdd"
+                    prefix = "qbxavdstdp"
                     ou = "OU=PROD,OU=AVDStd,$($ADBaseDesktopOU)"
                     image = "QBXDesktop"
                     rdpProperties = "audiocapturemode:i:1;audiomode:i:0;drivestoredirect:s:;redirectclipboard:i:1;redirectcomports:i:0;redirectprinters:i:1;redirectsmartcards:i:1;screen mode id:i:2;autoreconnection enabled:i:1;bandwidthautodetect:i:1;networkautodetect:i:1;compression:i:1;videoplaybackmode:i:1;redirectlocation:i:0;redirectwebauthn:i:1;use multimon:i:1;dynamic resolution:i:1"
-                    hostPoolName = "$($product)-hp-prod".ToLower()
+                    hostPoolName = "$($product)-hp-avdstd-prod".ToLower()
                     hostPoolRG = "$product-RG-AVD-STD-PROD".ToUpper()
                     vnetName = "$product-vnet-avdstd-prod".ToLower()
                     vnetCIDR = '10.246.16.0/24'
@@ -77,6 +92,21 @@ function Get-Config {
                     nsgName = "$product-nsg-avdstd-prod".ToLower()
                     appGroupName = "$product-ag-avdstd-prod".ToLower()
                     workspaceName = "$product-ws-avdstd-prod".ToLower()
+                }
+                avdeph = @{
+                    prefix = "qbxavdephp"
+                    ou = "OU=PROD,OU=AVDEph,$($ADBaseDesktopOU)"
+                    image = "QBXDesktop"
+                    rdpProperties = "audiocapturemode:i:1;audiomode:i:0;drivestoredirect:s:;redirectclipboard:i:1;redirectcomports:i:0;redirectprinters:i:1;redirectsmartcards:i:1;screen mode id:i:2;autoreconnection enabled:i:1;bandwidthautodetect:i:1;networkautodetect:i:1;compression:i:1;videoplaybackmode:i:1;redirectlocation:i:0;redirectwebauthn:i:1;use multimon:i:1;dynamic resolution:i:1"
+                    hostPoolName = "$($product)-hp-avdeph-prod".ToLower()
+                    hostPoolRG = "$product-RG-AVD-EPH-PROD".ToUpper()
+                    vnetName = "$product-vnet-avdstd-prod".ToLower()
+                    vnetCIDR = '10.246.17.0/24'
+                    snetName = "$product-snet-avdeph-prod".ToLower()
+                    snetCIDR = "'10.246.17.0/24'"
+                    nsgName = "$product-nsg-avdeph-prod".ToLower()
+                    appGroupName = "$product-ag-avdeph-prod".ToLower()
+                    workspaceName = "$product-ws-avdeph-prod".ToLower()
                 }
             }
         }
