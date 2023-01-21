@@ -326,7 +326,7 @@ function Install-VSIX {
     )
 
     $vsixFile = ""
-    if ($installFRomRepo) {
+    if ($installFromRepo) {
         $filedata = Get-FileFromRepo $repoContext $filePath
         $filename = $filedata.filename
 
@@ -344,6 +344,7 @@ function Install-VSIX {
         }
         $vsixFile = $filePath
     }
+    
 
     Write-Log "Installing VSIX file $vsixFile" -logtag $logtag
 
