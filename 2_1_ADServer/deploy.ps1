@@ -2,6 +2,7 @@
 
 param (
     [Parameter(Mandatory)]
+    [ValidateSet("dev","prod")]
     [String]$localenv,
     [Bool]$dryrun = $true,
     [Bool]$dologin = $true,
@@ -14,10 +15,10 @@ Import-Module ../PSConfig/deployConfig.psm1 -Force
 #Get the local environment into a consistent state
 $localenv = $localenv.ToLower()
 
-if ((!$localenv) -and ($localenv -ne 'dev') -and ($localenv -ne 'prod')) {
-    Write-Host "Error: Please specify a valid environment to deploy to [dev | prod]" -ForegroundColor Red
-    exit 1
-}
+# if ((!$localenv) -and ($localenv -ne 'dev') -and ($localenv -ne 'prod')) {
+#     Write-Host "Error: Please specify a valid environment to deploy to [dev | prod]" -ForegroundColor Red
+#     exit 1
+# }
 
 #Get the config for the selected local environment
 $localConfig = Get-Config

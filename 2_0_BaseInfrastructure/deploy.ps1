@@ -2,6 +2,7 @@
 
 param (
     [Parameter(Mandatory)]
+    [ValidateSet("dev","prod")]
     [String]$localenv,
     [Bool]$dryrun = $true,
     [Bool]$dologin = $true,
@@ -15,10 +16,10 @@ Import-Module ../PSConfig/deployConfig.psm1 -Force
 #Get the local environment into a consistent state
 $localenv = $localenv.ToLower()
 
-if ((!$localenv) -and ($localenv -ne 'dev') -and ($localenv -ne 'prod')) {
-    Write-Host "Error: Please specify a valid environment to deploy to [dev | prod]" -ForegroundColor Red
-    exit 1
-}
+# if ((!$localenv) -and ($localenv -ne 'dev') -and ($localenv -ne 'prod')) {
+#     Write-Host "Error: Please specify a valid environment to deploy to [dev | prod]" -ForegroundColor Red
+#     exit 1
+# }
 
 #Get the config for the selected local environment
 $localConfig = Get-Config
@@ -53,15 +54,18 @@ if ($dryrun) {
     Write-Host "LIVE: Running the Infrastructure Build - Deploying Resources" -ForegroundColor Green
 }
 
-New-AzSubscriptionDeployment -Name "BaseInfrastructure" -Location $localConfig.$localenv.location -Verbose -TemplateFile "../2_0_BaseInfrastructure/deploy.bicep" -WhatIf:$dryrun -TemplateParameterObject @{
-    localenv=$localenv
-    location=$localConfig.$localenv.location
-    tags=$localConfig.$localenv.tags
-    productShortName=$localConfig.general.productShortName
-    boundaryVnetCIDR=$localConfig.$localenv.boundaryVnetCIDR
-    boundaryVnetBastionCIDR=$localConfig.$localenv.boundaryVnetBastionCIDR
-    deployBastion=$deployBastion
+try {
+    New-AzSubscriptionDeployment -Name "BaseInfrastructure" -Location $localConfig.$localenv.location -Verbose -TemplateFile "../2_0_BaseInfrastructure/deploy.bicep" -WhatIf:$dryrun -TemplateParameterObject @{
+        localenv=$localenv
+        location=$localConfig.$localenv.location
+        tags=$localConfig.$localenv.tags
+        productShortName=$localConfig.general.productShortName
+        boundaryVnetCIDR=$localConfig.$localenv.boundaryVnetCIDR
+        boundaryVnetBastionCIDR=$localConfig.$localenv.boundaryVnetBastionCIDR
+        deployBastion=$deployBastion
 }
-
-
-Write-Host "Finished" -foregroundColor Green
+    Write-Host "Finished: Base infrastructure deployment completed successfully" -ForegroundColor Green
+} catch {
+    Write-Host "Error: Base infrastructure deployment failed with error: $_" -ForegroundColor Red
+    exit 1
+}
