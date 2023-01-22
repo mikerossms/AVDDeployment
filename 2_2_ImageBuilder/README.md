@@ -1,4 +1,4 @@
-# 2.0 Base Infrastructure
+# 2.2 Image Builder
 
 ![Infrastructure for the Image Builder](../Diagrams/2_2_ImageBuilder.png)
 

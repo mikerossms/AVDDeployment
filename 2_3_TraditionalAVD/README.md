@@ -1,4 +1,8 @@
-# Traditional AVD deployment
+# 2.3 Traditional AVD Deployment
+
+![Infrastructure for Traditional AVD](../Diagrams/2_3_TraditionalAVD.png)
+
+## What this does
 
 This is considered the traditional AVD deployment which consists of a host pool (plus supporting components) and a number of pre-build virtual machine added to that pool and the Azure Scaling Plan to managing the turning on and off of those machines.
 
