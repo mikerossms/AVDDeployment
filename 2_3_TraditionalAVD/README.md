@@ -4,7 +4,7 @@
 
 ## What this does
 
-This is considered the traditional AVD deployment which consists of a host pool (plus supporting components) and a number of pre-build virtual machine added to that pool and the Azure Scaling Plan to managing the turning on and off of those machines.
+This is considered the traditional AVD deployment which consists of a host pool (plus supporting components) and a number of pre-built virtual machine added to that pool and the Azure Scaling Plan to managing the turning on and off of those machines.
 
 # Requirements
 
@@ -21,8 +21,6 @@ This is considered the traditional AVD deployment which consists of a host pool 
 
 
 # Scaling
-
-
 
 
 # Logging in
