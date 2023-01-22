@@ -152,6 +152,31 @@ Deploy to the DEV environment, deploy live and make changes and disable the Azur
 .\deployCommon.ps1 -localenv dev -dryrun $false -dologin $false
 
 
+You will be asked for a domain admin password.  The domain admin username is set in the deployConfig.psm1 config file.
+
+Takes 20-30 mins
+
+Note: If you hit any issues relating to keyvault, have a look at the keyvault/networking settings that allow the VM and microsoft services.
+
+Once completed, you will need to log into the AD server (via bastion set up earlier) and open Users and Computers, then create a new org unit for the AVD deployment (I will automate this at some point).  Then you need to update the deployConfig.psm1 with the OU you have just created (in $ADBaseDesktopOU).  This is where the computer objects will be registered.  It should be of the LDAP form e.g. OU=Desktops,DC=mydomain,DC=com
+
+Next you need to create any additional "sub" OUs you need.  Typically you will have one for your desktop by name and if you do dev and prod, then perhaps another sub one.  In the default config, you will find it here:
+
+```bicep
+desktops = @{
+                avdstd = @{
+                    prefix = "$($product)avdstdd".ToLower()
+                    ou = "OU=DEV,OU=AVDStd,$($ADBaseDesktopOU)"
+```
+
+This translates to a AD users and computers "folder" structure of mydomain.com -> Desktops -> AVDStd -> DEV
+
+(optional) Finally you may need to set up a version of AD connect (assuming you are not using AADDS) if you want your VM based AD identities available in AAD.  The easiest one to do is set up "AD Connect Cloud Sync" but you will need a custom domain name for that.  Full instructions are provided in the README.md.  AD Connect is used to connect your AD VM to AAD.
+
+If you have gone down the AADDS route, you will need a local VM with the AD RSAT tools installed, then create the OU as above.  AD connect is not required for AADDS as it is fully integrated.
+
+**Note:** if you dont use AD connect you will need to change the "RDP Properties" in the hostpool and set "Azure AD authentication" to "RDP won't use Azure AD authentication to sign in".
+
 ## Deploying for a Multiple Environment
 
 (FUTURE)

@@ -1,3 +1,5 @@
+# RE-initialises the ResourceModules repo and reconnecting it as a shared repo to this one.
+
 if (Test-Path -Path "./ResourceModules") {
     Remove-Item ResourceModule -Recurse
 }
