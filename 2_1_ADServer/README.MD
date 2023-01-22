@@ -1,4 +1,8 @@
-# Purpose
+# 2.1 AD Server
+
+![Ad Server Infrastructure Diagram](../Diagrams/2_1_AD_Server.png)
+
+## What this does
 
 In order for AVD to function, it needs the "Domain Services" object store part of Active Directory.  At present Azure Active Directory does not provide this.  So we need a solution that does.  There are two options:
 
@@ -6,6 +10,10 @@ In order for AVD to function, it needs the "Domain Services" object store part o
 1. Active Directory Domain Services - A virtual machine running Windows Server and AD DS
 
 In both cases Azure Active Directory (AAD) is still used for user authentication and AAD synchronisation is needed to AADDS (automatically) and ADDS (via ADConnect)
+
+## Requirements
+
+Prior to running this script you MUST have updated deployConfig.ps1 for your environment.  You can find this powershell module in \PSConfig\deployConfig.psm1.  See the [README](../PSConfig/README.md) in that section for more information.
 
 ## Which one do I choose?
 
@@ -38,6 +46,31 @@ Using an IaaS solution does have some other limitations:
 
 # Build the AD server
 
+The script "deploy.ps1" takes several arguments:
+
+- localenv
+    - (required) Typically either dev or prod depending on the environment you want to deploy in
+- dryrun
+    - (optional) DryRun allows you to see what will be deployed before any changes are made.  Defaults to true
+- dologin
+    - (optional) DoLogin allows you to enable to disable the Azure login prompt.  Defaults to true
+- deployADServer
+    - (optional) DeployADServer tells teh script to do the AD VM server deployment, otherwise it only deploys the AD base infrastructure.  Defaults to true
+
+## Examples
+
+Deploy using the main defaults to the DEV environment.  It will do a DryRun and log you into Azure as well as deploy the AD VM and configure a basic forest.
+
+```powershell
+.\deploy.ps1 -localenv dev
+```
+
+Deploy to the DEV environment, deploy live and make changes and disable the Azure login prompt.  Why would you disable the login prompt?  Well, once you have logged in once you don't need to do it again until the session token expires.
+
+```powershell
+.\deploy.ps1 -localenv dev -dryrun $false -dologin $false
+```
+
 # Configure the AD server
 
 While the majority of the build is automated there is a set of steps that has to be handled manually 0 namely to connect AAD and the virtual machine based AD server together.  there are two ways tot do this:
@@ -45,7 +78,7 @@ While the majority of the build is automated there is a set of steps that has to
 1. AD Connect (the traditional fat client that run on a virtual or physical machine and syncs the local AD up to AAD)
 1. AD Connect Cloud Sync (the new thin client/agent that runs on the AD server with all the conf and heavy lifting done in AAD)
 
-So which one you ask?  Well AD Connect Cloud Sync is the way things are going but it does have some limitations when compared to AD Connect.  You can have a look at this [here]](https://learn.microsoft.com/en-us/azure/active-directory/cloud-sync/what-is-cloud-sync#comparison-between-azure-ad-connect-and-cloud-sync)
+So which one you ask?  Well AD Connect Cloud Sync is the way things are going but it does have some limitations when compared to AD Connect.  You can have a look at this [here](https://learn.microsoft.com/en-us/azure/active-directory/cloud-sync/what-is-cloud-sync#comparison-between-azure-ad-connect-and-cloud-sync)
 
 If you can, and it works for you, I would recommend using AD Connect Cloud Sync.  But I will cover both in this readme.
 

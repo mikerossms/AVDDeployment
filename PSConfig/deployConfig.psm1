@@ -3,6 +3,7 @@ function Get-Config {
     $owner = "Quberatron"
     $product = "QBX"
     $ADBaseDesktopOU = 'OU=Desktops,DC=quberatron,DC=com'
+    $rdpProperties = "audiocapturemode:i:1;audiomode:i:0;drivestoredirect:s:;redirectclipboard:i:1;redirectcomports:i:0;redirectprinters:i:1;redirectsmartcards:i:1;screen mode id:i:2;autoreconnection enabled:i:1;bandwidthautodetect:i:1;networkautodetect:i:1;compression:i:1;videoplaybackmode:i:1;redirectlocation:i:0;redirectwebauthn:i:1;use multimon:i:1;dynamic resolution:i:1"
 
     $config = @{
         dev = @{
@@ -29,7 +30,7 @@ function Get-Config {
                     prefix = "qbxavdstdd"
                     ou = "OU=DEV,OU=AVDStd,$($ADBaseDesktopOU)"
                     image = "QBXDesktop"
-                    rdpProperties = "audiocapturemode:i:1;audiomode:i:0;drivestoredirect:s:;redirectclipboard:i:1;redirectcomports:i:0;redirectprinters:i:1;redirectsmartcards:i:1;screen mode id:i:2;autoreconnection enabled:i:1;bandwidthautodetect:i:1;networkautodetect:i:1;compression:i:1;videoplaybackmode:i:1;redirectlocation:i:0;redirectwebauthn:i:1;use multimon:i:1;dynamic resolution:i:1"
+                    rdpProperties = $rdpProperties
                     hostPoolName = "$($product)-hp-avdstd-dev".ToLower()
                     hostPoolRG = "$product-RG-AVD-STD-DEV".ToUpper()
                     vnetName = "$product-vnet-avdstd-dev".ToLower()
@@ -44,7 +45,7 @@ function Get-Config {
                     prefix = "qbxavdephd"
                     ou = "OU=DEV,OU=AVDEph,$($ADBaseDesktopOU)"
                     image = "QBXDesktop"
-                    rdpProperties = "audiocapturemode:i:1;audiomode:i:0;drivestoredirect:s:;redirectclipboard:i:1;redirectcomports:i:0;redirectprinters:i:1;redirectsmartcards:i:1;screen mode id:i:2;autoreconnection enabled:i:1;bandwidthautodetect:i:1;networkautodetect:i:1;compression:i:1;videoplaybackmode:i:1;redirectlocation:i:0;redirectwebauthn:i:1;use multimon:i:1;dynamic resolution:i:1"
+                    rdpProperties = $rdpProperties
                     hostPoolName = "$($product)-hp-avdeph-dev".ToLower()
                     hostPoolRG = "$product-RG-AVD-EPH-DEV".ToUpper()
                     vnetName = "$product-vnet-avdeph-dev".ToLower()
@@ -82,7 +83,7 @@ function Get-Config {
                     prefix = "qbxavdstdp"
                     ou = "OU=PROD,OU=AVDStd,$($ADBaseDesktopOU)"
                     image = "QBXDesktop"
-                    rdpProperties = "audiocapturemode:i:1;audiomode:i:0;drivestoredirect:s:;redirectclipboard:i:1;redirectcomports:i:0;redirectprinters:i:1;redirectsmartcards:i:1;screen mode id:i:2;autoreconnection enabled:i:1;bandwidthautodetect:i:1;networkautodetect:i:1;compression:i:1;videoplaybackmode:i:1;redirectlocation:i:0;redirectwebauthn:i:1;use multimon:i:1;dynamic resolution:i:1"
+                    rdpProperties = $rdpProperties
                     hostPoolName = "$($product)-hp-avdstd-prod".ToLower()
                     hostPoolRG = "$product-RG-AVD-STD-PROD".ToUpper()
                     vnetName = "$product-vnet-avdstd-prod".ToLower()
@@ -97,7 +98,7 @@ function Get-Config {
                     prefix = "qbxavdephp"
                     ou = "OU=PROD,OU=AVDEph,$($ADBaseDesktopOU)"
                     image = "QBXDesktop"
-                    rdpProperties = "audiocapturemode:i:1;audiomode:i:0;drivestoredirect:s:;redirectclipboard:i:1;redirectcomports:i:0;redirectprinters:i:1;redirectsmartcards:i:1;screen mode id:i:2;autoreconnection enabled:i:1;bandwidthautodetect:i:1;networkautodetect:i:1;compression:i:1;videoplaybackmode:i:1;redirectlocation:i:0;redirectwebauthn:i:1;use multimon:i:1;dynamic resolution:i:1"
+                    rdpProperties = $rdpProperties
                     hostPoolName = "$($product)-hp-avdeph-prod".ToLower()
                     hostPoolRG = "$product-RG-AVD-EPH-PROD".ToUpper()
                     vnetName = "$product-vnet-avdstd-prod".ToLower()
@@ -127,7 +128,7 @@ function Get-Config {
             owner = $owner
             product = $product
             productShortName = $product
-            rdpProperties = ''
+            rdpProperties = $rdpProperties
         }
     }
 
