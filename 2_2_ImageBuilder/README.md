@@ -1,12 +1,35 @@
+# 2.0 Base Infrastructure
+
+![Infrastructure for the Image Builder](../Diagrams/2_2_ImageBuilder.png)
+
+## What this does
+
+This creates the infrastructure required for the Image Builder to function.  This includes a compute gallery where images will be stored and provides storage for build scripts and software to be installed.
+
+There are two parts to this script:
+
+1. Deployment of the compute gallery and storage components
+1. The deployment of Image Definition and Template
+
+Once deployed, it will then build the image.
+
+## Requirements
+
+Prior to running this script you MUST have updated deployConfig.ps1 for your environment.  You can find this powershell module in \PSConfig\deployConfig.psm1.  See the [README](../PSConfig/README.md) in that section for more information.
+
+You must also take a look at the .\2a_SingleEnv\InstallSoftware.ps1 script and determine what you want to install into the image.  It manages software from both the blob software repo, package manages such as chocolately plus it will move files into position, add registry entries and configure things like RSAT tools etc.
+
 # Notes
 
-Traditionally, you would deploy this to DEV only then create a pipeline to COPY the image from DEV compute gallery to the PROD compute gallery.  However, there is now an optional step as different subscriptions can now use a single gallery.  Both have merits, a single gallery's images can be tagged with DEV then promoted to PROD once tested and is cheaper to run, but this requires more logic.  Dual gallerys keep dev and prod fully separate with a formal gateway and approval process to transfer it to prod. This is more expensive to run, but is more secure.
+Traditionally, you would deploy this to DEV only then create a pipeline to COPY the image from DEV compute gallery to the PROD compute gallery.  However, there is now an optional step as different subscriptions can now use a single gallery.  Both have merits, a single gallery's images can be tagged with DEV then promoted to PROD once tested and is cheaper to run, but this requires more logic.  Dual gallerys keep dev and prod fully separate with a formal gateway and approval process to transfer it to prod. This is more expensive to run, but is more secure with less risk
 
 # Single Compute Gallery
 
 This provides a single environment image builder and compute gallery.  This can then be used as part of a single compute gallery deployment.
 
 # Multi Compute Gallery
+
+(TO BE COMPLETED - FUTURE)
 
 This builds both a DEV AND PROD (though you could also have other in-between stages as well) environment where the DEV environment provides an image builder infrastrcture and dev compute gallery and the production environment provides just a compute gallery.  Provided is two ways to copy the image from the dev to the production compute gallery - a simple powershell script that jsut copies the latest image over, and a more comprehensve YAML pipeline that monitors runs continuous development of the dev environment (monitoring changes to the build) AND an approval process that then copies the file from DEV to PROD.
 
@@ -55,7 +78,6 @@ This script is really up to you.  Some basic checks have been added by way of ex
 
 
 # Building an image
-
 ## Prep the image folder
 
 In order to build the image you will need to:
@@ -76,4 +98,60 @@ In this deployment, there are two build scripts:
 
 You will need to make sure that PSConfig/deployConfig.psm1 is correct which, if you have been following the series, should have been done earlier.
 
-## Run the build script
+## Deploying Common elements
+
+The script "deploy.ps1" takes several arguments:
+
+- localenv
+    - (required) Typically either dev or prod depending on the environment you want to deploy in
+- dryrun
+    - (optional) DryRun allows you to see what will be deployed before any changes are made.  Defaults to true
+- dologin
+    - (optional) DoLogin allows you to enable to disable the Azure login prompt.  Defaults to true
+- doTestFileUpload
+    - (optional) doTestFileUpload tells the script to take the contents of the TestSoftware folder (found within Components) and upload it to the repo container.  Defaults to true
+
+## Examples
+Deploy using the main defaults to the DEV environment.  It will do a DryRun and log you into Azure as well as deploy repo storage and compute gallery.
+
+```powershell
+.\deployCommon.ps1 -localenv dev
+```
+
+Deploy to the DEV environment, deploy live and make changes and disable the Azure login prompt.  why would you disable the login prompt?  Well, once you have logged in once you don't need to do it again until the session token expires.
+
+```powershell
+.\deployCommon.ps1 -localenv dev -dryrun $false -dologin $false
+```
+
+## Deploying for a Single Environment
+
+Once the storage repo and compute gallery have been deployed, this script builds an Image Definition and Image Template in preparation for the image to be built by ImageBuilder.  
+
+- localenv
+    - (required) Typically either dev or prod depending on the environment you want to deploy in
+- dryrun
+    - (optional) DryRun allows you to see what will be deployed before any changes are made.  Defaults to true
+- dologin
+    - (optional) DoLogin allows you to enable to disable the Azure login prompt.  Defaults to true
+- installModules
+    - (optional) installModules tells the script to install the required PowerShell modules on the system running this script.  Defaults to false
+- buildImage
+    - (optional) buildImage tells the script to build the image if set to true.  Defaults to true
+
+### Examples
+Deploy using the main defaults to the DEV environment.  It will do a DryRun and log you into Azure and run a dry run but make no changes
+
+```powershell
+.\deployCommon.ps1 -localenv dev
+```
+
+Deploy to the DEV environment, deploy live and make changes and disable the Azure login prompt.  why would you disable the login prompt?  Well, once you have logged in once you don't need to do it again until the session token expires. 
+
+```powershell
+.\deployCommon.ps1 -localenv dev -dryrun $false -dologin $false
+
+
+## Deploying for a Multiple Environment
+
+(FUTURE)
