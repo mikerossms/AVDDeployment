@@ -63,6 +63,9 @@ if ($subid -ne $localConfig.$localenv.subscriptionID) {
 $hpRG = $localConfig.$localenv.desktops.$desktopName.hostPoolRG
 $hpName = $localConfig.$localenv.desktops.$desktopName.hostPoolName
 
+$hpRG
+$hpName
+
 # Get the host pool details
 $hostPool = Get-AzWvdHostPool -ResourceGroupName $hpRG -Name $hpName
 
@@ -72,58 +75,28 @@ if (!$hostPool) {
     exit 1
 }
 
-# Get the scaling plan name associated with the host pool
-$scalingPlanName = $hostPool.AutoscaleConfiguration.Name
+#Check if there is a scale plan
+$scalePlanExists = Get-HostPoolScalingPlanExists -hostPoolName $hpName -hostPoolRG $hpRG
+if ($scalePlanExists) {
+    $scalePlanState = Get-HostPoolScalingPlanState -hostPoolName $hpName -hostPoolRG $hpRG
 
-# Check if the host pool has an associated scaling plan
-if (!$scalingPlanName) {
-    Write-Host "Host pool does not have an associated scaling plan - no actions" -ForegroundColor Red
-    exit 0
-}
+    if ($scalePlanState -eq $enabled) {
+        Write-Host "Scaling plan is already in the desired state" -ForegroundColor Green
+        exit 0
+    }
 
-# Get the current scaling plan
-$scalingPlan = Get-AzVmssAutoscale -ResourceGroupName $resourceGroup -Name $scalingPlanName
+    Write-Host "Setting Scaling Plan for hostpool: $hpName to $state" -ForegroundColor Green
+    $result = Set-HostPoolScalingPlanState -hostPoolName $hpName -hostPoolRG $hpRG -enabled $enabled
+    if ($result) {
+        Write-Host "Scaling plan state change successful" -ForegroundColor Green
+    } else {
+        Write-Host "ERROR: Failed to change the state of the scaling plan" -ForegroundColor Red
+        exit 1
+    }
 
-# Update the scaling plan to the desired state
-$scalingPlan.Enabled = $enable
-Set-AzVmssAutoscale -AutoscaleSetting $scalingPlan
-
-# Get the updated scaling plan
-$updatedScalingPlan = Get-AzVmssAutoscale -ResourceGroupName $resourceGroup -Name $scalingPlanName
-
-# Check if the state has changed correctly
-if($enable -eq $updatedScalingPlan.Enabled){
-    Write-Host "Scaling plan has been enabled successfully" -ForegroundColor Green
 } else {
-    Write-Host "Error: Scaling plan state change was not successful, please check the configuration and try again" -ForegroundColor Red
+    Write-Host "No scale plan found for hostpool: $hpName" -ForegroundColor Yellow
     exit 1
 }
 
 Write-Host "Deployment Complete" -ForegroundColor Green
-exit 0
-
-# #Check if there is a scale plan
-# $scalePlanExists = Get-HostPoolScalingPlanExists -hostPoolName $hpName -hostPoolRG $hpRG
-# if ($scalePlanExists) {
-#     $scalePlanState = Get-HostPoolScalingPlanState -hostPoolName $hpName -hostPoolRG $hpRG
-
-#     if ($scalePlanState -eq $enabled) {
-#         Write-Host "Scaling plan is already in the desired state" -ForegroundColor Green
-#         exit 0
-#     }
-
-#     Write-Host "Setting Scaling Plan for hostpool: $hpName to $state" -ForegroundColor Green
-#     $result = Set-HostPoolScalingPlanState -hostPoolName $hpName -hostPoolRG $hpRG -enabled $enabled
-#     if ($result) {
-#         Write-Host "Scaling plan state change successful" -ForegroundColor Green
-#     } else {
-#         Write-Host "ERROR: Failed to change the state of the scaling plan" -ForegroundColor Red
-#         exit 1
-#     }
-
-# } else {
-#     Write-Host "No scale plan found for hostpool: $hpName" -ForegroundColor Yellow
-#     exit 1
-# }
-
-# Write-Host "Deployment Complete" -ForegroundColor Green
