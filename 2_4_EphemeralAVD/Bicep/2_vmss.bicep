@@ -69,6 +69,9 @@ param adKeyVaultRG string = toUpper('${productShortName}-RG-IDENTITY-${localenv}
 @description('The name of the keyvault to store the AD credentials')
 param adKeyVaultName string = toLower('${productShortName}-kv-ad-${localenv}')
 
+@description('The username of the AD domain account used to join the hosts to the domain')
+param adDomainUsername string
+
 //Image Builder Compute Gallery settings
 @description('The Resource Group name where the Compute Gallery is located that hosts the image builder image')
 param galleryRG string = toUpper('${productShortName}-RG-IMAGES-${localenv}')
@@ -157,29 +160,11 @@ module virtualMachineScaleSets '../../ResourceModules/modules/Microsoft.Compute/
     diagnosticWorkspaceId: LAWorkspace.id
     diagnosticLogsRetentionInDays: 7
 
-    extensionAntiMalwareConfig: {
-      enabled: true
-      settings: {
-        AntimalwareEnabled: true
-        Exclusions: {
-          Extensions: '.log;.ldf'
-          Paths: 'D:\\IISlogs;D:\\DatabaseLogs'
-          Processes: 'mssence.svc'
-        }
-        RealtimeProtectionEnabled: true
-        ScheduledScanSettings: {
-          day: '7'
-          isEnabled: 'true'
-          scanType: 'Quick'
-          time: '120'
-        }
-      }
-    }
     extensionDomainJoinConfig: {
       enabled: true
       settings: {
         name: adDomainName
-        user: 'commander@${adDomainName}'
+        user: '${adDomainUsername}@${adDomainName}'
         ouPath: adOUPath
         restart: true
         options: 3
@@ -188,8 +173,9 @@ module virtualMachineScaleSets '../../ResourceModules/modules/Microsoft.Compute/
 
     extensionDomainJoinPassword: ADKeyVault.getSecret('ADAdminPassword')
 
+      //changed from true
     extensionMonitoringAgentConfig: {
-      enabled: true
+      enabled: false
     }
 
     extensionNetworkWatcherAgentConfig: {
@@ -198,18 +184,6 @@ module virtualMachineScaleSets '../../ResourceModules/modules/Microsoft.Compute/
 
     extensionDependencyAgentConfig: {
       enabled: true
-    }
-
-    extensionDSCConfig: {
-      enabled: true
-      settings: {
-        modulesUrl: dscConfigURL
-        configurationFunction: 'Configuration.ps1\\AddSessionHost'
-        properties: {
-          HostPoolName: hostPoolName
-          RegistrationInfoToken: hostPoolToken
-        }
-      }
     }
 
     nicConfigurations: [
@@ -233,3 +207,93 @@ module virtualMachineScaleSets '../../ResourceModules/modules/Microsoft.Compute/
     vmPriority: 'Regular'
   }
 }
+
+//The following extensions should be installable as part of the VMSS module, but for some reason including them causes the deployment to fail
+//with concurrency issues.  As a result, we need to install them in sequence rather than in parallel after VMSS has deployed
+
+//Install Antimalware extension - concurrent install issues if included as part of VMSS, so wait until VMSS is created and other extensions installed
+module virtualMachineScaleSetsExtAntiMal '../../ResourceModules/modules/Microsoft.Compute/virtualMachineScaleSets/extensions/deploy.bicep' = {
+  name: 'virtualMachineScaleSetsExtAntiMal'
+  scope: RGAVDSTD
+  params: {
+    virtualMachineScaleSetName: virtualMachineScaleSets.name
+    name: 'AntimalwareExtension'
+    publisher: 'Microsoft.Azure.Security'
+    type: 'IaaSAntimalware'
+    typeHandlerVersion: '1.3'
+    autoUpgradeMinorVersion: true
+    enableAutomaticUpgrade: false
+    settings: {
+      AntimalwareEnabled: true
+      Exclusions: {
+        Extensions: '.log;.ldf'
+        Paths: 'D:\\IISlogs;D:\\DatabaseLogs'
+        Processes: 'mssence.svc'
+      }
+      RealtimeProtectionEnabled: true
+      ScheduledScanSettings: {
+        day: '7'
+        isEnabled: 'true'
+        scanType: 'Quick'
+        time: '120'
+      }
+    }
+
+  }
+  dependsOn: [
+    virtualMachineScaleSets
+  ]
+} 
+
+
+//Install DSC extension to connect VMSS to host pool - concurrent install issues if included as part of VMSS, so wait until VMSS is created and other extensions installed
+module virtualMachineScaleSetsExtDSC '../../ResourceModules/modules/Microsoft.Compute/virtualMachineScaleSets/extensions/deploy.bicep' = {
+  name: 'virtualMachineScaleSetsExtDSC'
+  scope: RGAVDSTD
+  params: {
+    virtualMachineScaleSetName: virtualMachineScaleSets.name
+    name: 'DesiredStateConfiguration'
+    publisher: 'Microsoft.Powershell'
+    type: 'DSC'
+    typeHandlerVersion: '2.77'
+    autoUpgradeMinorVersion: true
+    enableAutomaticUpgrade: false
+    settings: {
+      modulesUrl: dscConfigURL
+      configurationFunction: 'Configuration.ps1\\AddSessionHost'
+      properties: {
+        HostPoolName: hostPoolName
+        RegistrationInfoToken: hostPoolToken
+      }
+    }
+
+  }
+  dependsOn: [
+    virtualMachineScaleSetsExtAntiMal
+  ]
+} 
+
+//Install Monitoring Agent on VMSS - concurrent install issues if included as part of VMSS, so wait until VMSS is created and other extensions installed
+module virtualMachineScaleSetsExtMonitoring '../../ResourceModules/modules/Microsoft.Compute/virtualMachineScaleSets/extensions/deploy.bicep' = {
+  name: 'virtualMachineScaleSetsExtMonitoring'
+  scope: RGAVDSTD
+  params: {
+    virtualMachineScaleSetName: virtualMachineScaleSets.name
+    name: 'MicrosoftMonitoringAgent'
+    publisher: 'Microsoft.EnterpriseCloud.Monitoring'
+    type: 'MicrosoftMonitoringAgent'
+    typeHandlerVersion: '1.7'
+    autoUpgradeMinorVersion: true
+    enableAutomaticUpgrade: false
+    settings: {
+      workspaceId: LAWorkspace.id 
+    }
+    protectedSettings: {
+      workspaceKey: LAWorkspace.listKeys().primarySharedKey
+    }
+
+  }
+  dependsOn: [
+    virtualMachineScaleSetsExtDSC
+  ]
+} 

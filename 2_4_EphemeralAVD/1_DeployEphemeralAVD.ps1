@@ -136,6 +136,7 @@ if ($deployVMSS) {
         productShortName = $localConfig.general.productShortName
         adDomainName = $localConfig.general.ADDomain
         adOUPath = $localConfig.$localenv.desktops.$desktopName.ou
+        adDomainUsername = $localConfig.general.ADUsername
         avdVnetName = $localConfig.$localenv.desktops.$desktopName.vnetName
         avdSubnetName = $localConfig.$localenv.desktops.$desktopName.snetName
         hostpoolName = $hpName
