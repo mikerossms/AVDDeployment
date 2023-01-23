@@ -131,7 +131,7 @@ if ($scalePlanExists) {
 
 #Run the VM Hosts bicep deployment
 Write-Host "Deploying the Virtual Machines and joining them to the hostpool" -ForegroundColor Green
-$out2 = New-AzSubscriptionDeployment -Name "AddHostsToStandardAVDHostPool" -Location $localConfig.$localenv.location -Verbose -TemplateFile "..\2_hosts.bicep" -WhatIf:$dryrun -TemplateParameterObject @{
+$out2 = New-AzSubscriptionDeployment -Name "AddHostsToStandardAVDHostPool" -Location $localConfig.$localenv.location -Verbose -TemplateFile "..\Bicep\2_hosts.bicep" -WhatIf:$dryrun -TemplateParameterObject @{
     localenv=$localenv
     location=$localConfig.$localenv.location
     tags=$localConfig.$localenv.tags

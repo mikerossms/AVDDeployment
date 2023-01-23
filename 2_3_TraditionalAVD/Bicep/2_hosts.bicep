@@ -18,7 +18,7 @@ param localenv string = 'dev'
 param location string = 'uksouth'
 
 @maxLength(4)
-@description('Product Short Name e.g. TST - no more than 4 characters')
+@description('Product Short Name e.g. QBX - no more than 4 characters')
 param productShortName string
 
 @description('Tags to be applied to all resources')
@@ -40,23 +40,25 @@ param LAWorkspaceName string = toLower('${productShortName}-LAW-${localenv}')
 @description('The name of the host pool')
 param hostPoolName string = toLower('${productShortName}-HP-${localenv}')
 
-@description('The name of the Resource Group hosuing the HostPool')
 param hostPoolRG string = toUpper('${productShortName}-RG-AVD-STD-${localenv}')
+
+@description('The number of hosts to create and associated with this host pool')
+param hostPoolHostsToCreate int = 2
+
+@description('The number of hosts that already exist in the pool (so we can add more later)')
+param hostPoolHostsCurrentInstances int = 0
+
+@description('The prefix to use for the host names')
+param hostPoolHostNamePrefix string = toLower('${productShortName}avdstd')
+
+@description('The size of the VMs to create (Standard_D2s_v3 is the minimum size for AVD')
+param hostPoolVMSize string = 'Standard_D2s_v3'
 
 @description('The token to use to join the hosts to the hostpool')
 param hostPoolToken string
 
 @description('Name of the boot diagnostic storage account')
 param hostBootDiagStorageAccName string = toLower('${productShortName}stavdstddiag${localenv}')
-
-//VMSS Parameters
-@description('The name of the VMSS attached to the host pool')
-param vmssHostName string = toLower('${productShortName}-vmss-avdeph-${localenv}')
-
-@description('The size of the Gen 2 Ephemeral enabled to deploy when scaling the VMSS')
-param vmssHostSize string = 'Standard_E2ads_v5'
-
-param vmssHostNamePrefix string = toLower('${productShortName}avdeph')
 
 //Active Directory Settings
 @description('The name of the AD domain to join the hosts to')
@@ -135,7 +137,7 @@ resource avdSubnet 'Microsoft.Network/virtualNetworks/subnets@2022-07-01' existi
 }
 
 //Create the AVD Host Boot Diagnostics storage account
-module AVDHostBootDiag '../ResourceModules/modules/Microsoft.Storage/storageAccounts/deploy.bicep' = {
+module AVDHostBootDiag '../../ResourceModules/modules/Microsoft.Storage/storageAccounts/deploy.bicep' = {
   name: 'AVDHostBootDiag'
   scope: RGAVDSTD
   params: {
@@ -150,47 +152,67 @@ module AVDHostBootDiag '../ResourceModules/modules/Microsoft.Storage/storageAcco
 }
 
 
-
-
-module virtualMachineScaleSets '../ResourceModules/modules/Microsoft.Compute/virtualMachineScaleSets/deploy.bicep' = {
+//Create the VM hosts
+module AVDSTD '../../ResourceModules/modules/Microsoft.Compute/virtualMachines/deploy.bicep' = [for i in range(0,hostPoolHostsToCreate): {
+  name: '${hostPoolHostNamePrefix}-${i+hostPoolHostsCurrentInstances}'
   scope: RGAVDSTD
-  name: vmssHostName
   params: {
     location: location
     tags: tags
-    skuName: vmssHostSize
+    vmSize: hostPoolVMSize
     adminUsername: ADKeyVault.getSecret('ADAdminUsername')
     adminPassword: ADKeyVault.getSecret('ADAdminPassword')
+    name: '${hostPoolHostNamePrefix}-${i+hostPoolHostsCurrentInstances}'
     systemAssignedIdentity: true
-    name: vmssHostName
     imageReference: {
       id: ComputeGalleryImage.id
     }
+    // imageReference: {
+    //   offer: 'office-365'
+    //   publisher: 'MicrosoftWindowsDesktop'
+    //   sku: 'win10-22h2-avd-m365-g2'
+    //   version: 'latest'
+    // }
     osDisk: {
-      createOption: 'fromImage'
-      diskSizeGB: '128'
+      name: 'osdisk'
+      caching: 'ReadWrite'
+      createOption: 'FromImage'
+      deleteOption: 'Delete'
+      diskSizeGB: 128
       managedDisk: {
         storageAccountType: 'Premium_LRS'
       }
     }
     osType: 'Windows'
-    
-    // Non-required parameters
+    nicConfigurations: [
+      {
+        deleteOption: 'Delete'
+        enablePublicIp: false
+        enableAcceleratedNetworking: false
+        ipConfigurations: [
+          {
+            name: '${hostPoolHostNamePrefix}-${i+hostPoolHostsCurrentInstances}'
+            subnetResourceId: avdSubnet.id
+          }
+        ]
+        nicSuffix: '-nic-01'
+      }
+    ]
+
     monitoringWorkspaceId: LAWorkspace.id
     diagnosticWorkspaceId: LAWorkspace.id
-    diagnosticLogsRetentionInDays: 7
-    diagnosticStorageAccountId: AVDHostBootDiag.outputs.resourceId
+    nicdiagnosticMetricsToEnable: [
+      'AllMetrics'
+    ]
 
+    bootDiagnostics: true
+    bootDiagnosticStorageAccountName: AVDHostBootDiag.outputs.name
+  
     extensionAntiMalwareConfig: {
       enabled: true
       settings: {
-        AntimalwareEnabled: true
-        Exclusions: {
-          Extensions: '.log;.ldf'
-          Paths: 'D:\\IISlogs;D:\\DatabaseLogs'
-          Processes: 'mssence.svc'
-        }
-        RealtimeProtectionEnabled: true
+        AntimalwareEnabled: 'true'
+        RealtimeProtectionEnabled: 'true'
         ScheduledScanSettings: {
           day: '7'
           isEnabled: 'true'
@@ -199,6 +221,9 @@ module virtualMachineScaleSets '../ResourceModules/modules/Microsoft.Compute/vir
         }
       }
     }
+
+    //Join the AD Domain server
+    //Domain join options - see https://learn.microsoft.com/en-gb/windows/win32/api/lmjoin/nf-lmjoin-netjoindomain
     extensionDomainJoinConfig: {
       enabled: true
       settings: {
@@ -220,10 +245,6 @@ module virtualMachineScaleSets '../ResourceModules/modules/Microsoft.Compute/vir
       enabled: false
     }
 
-    extensionDependencyAgentConfig: {
-      enabled: true
-    }
-
     extensionDSCConfig: {
       enabled: true
       settings: {
@@ -236,24 +257,5 @@ module virtualMachineScaleSets '../ResourceModules/modules/Microsoft.Compute/vir
       }
     }
 
-    nicConfigurations: [
-      {
-        ipConfigurations: [
-          {
-            name: vmssHostNamePrefix
-            properties: {
-              subnet: {
-                id: avdSubnet.id
-              }
-            }
-          }
-        ]
-        nicSuffix: '-nic-01'
-      }
-    ]
-    skuCapacity: 1
-    upgradePolicyMode: 'Manual'
-    vmNamePrefix: vmssHostNamePrefix
-    vmPriority: 'Regular'
   }
-}
+}]

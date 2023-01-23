@@ -1,8 +1,4 @@
-// Deploys a traditional AVD soltion based on the image genersated in step 2.2
-// this will build a number of hosts, add them to the domain and then create and add them to the host pool
-// it will also create a scheduler to scale the solution up and down.
-
-//Note: NetworkWatcherAgent is set to false as it seems ot have a 50/50 change of failing.
+//Deploys an Ephemeral AVD setup using a hostpool and VMSS
 
 targetScope = 'subscription'
 
@@ -18,7 +14,7 @@ param localenv string = 'dev'
 param location string = 'uksouth'
 
 @maxLength(4)
-@description('Product Short Name e.g. QBX - no more than 4 characters')
+@description('Product Short Name e.g. TST - no more than 4 characters')
 param productShortName string
 
 @description('Tags to be applied to all resources')
@@ -40,32 +36,29 @@ param LAWorkspaceName string = toLower('${productShortName}-LAW-${localenv}')
 @description('The name of the host pool')
 param hostPoolName string = toLower('${productShortName}-HP-${localenv}')
 
+@description('The name of the Resource Group hosuing the HostPool')
 param hostPoolRG string = toUpper('${productShortName}-RG-AVD-STD-${localenv}')
-
-@description('The number of hosts to create and associated with this host pool')
-param hostPoolHostsToCreate int = 2
-
-@description('The number of hosts that already exist in the pool (so we can add more later)')
-param hostPoolHostsCurrentInstances int = 0
-
-@description('The prefix to use for the host names')
-param hostPoolHostNamePrefix string = toLower('${productShortName}avdstd')
-
-@description('The size of the VMs to create (Standard_D2s_v3 is the minimum size for AVD')
-param hostPoolVMSize string = 'Standard_D2s_v3'
 
 @description('The token to use to join the hosts to the hostpool')
 param hostPoolToken string
 
-@description('Name of the boot diagnostic storage account')
-param hostBootDiagStorageAccName string = toLower('${productShortName}stavdstddiag${localenv}')
+//VMSS Parameters
+@description('The name of the VMSS attached to the host pool')
+param vmssHostName string = toLower('${productShortName}-vmss-avdeph-${localenv}')
+
+@description('The size of the Gen 2 Ephemeral enabled to deploy when scaling the VMSS')
+param vmssHostSize string = 'Standard_E2ads_v5'
+
+@description('The prefix to use for the VMSS hostnames - Max 9 characters')
+@maxLength(9)
+param vmssHostNamePrefix string = toLower('${productShortName}avdeph')
 
 //Active Directory Settings
 @description('The name of the AD domain to join the hosts to')
-param adDomainName string = 'quberatron.com'
+param adDomainName string
 
 @description('The name of the AD OU to join the hosts to')
-param adOUPath string = 'OU=AVD,OU=Desktops,DC=quberatron,DC=com'
+param adOUPath string
 
 @description('The subscription ID of the AD Keyvault')
 param adKeyVaultSubscriptionId string = subscription().subscriptionId
@@ -136,83 +129,44 @@ resource avdSubnet 'Microsoft.Network/virtualNetworks/subnets@2022-07-01' existi
   scope: RGAVDSTD
 }
 
-//Create the AVD Host Boot Diagnostics storage account
-module AVDHostBootDiag '../ResourceModules/modules/Microsoft.Storage/storageAccounts/deploy.bicep' = {
-  name: 'AVDHostBootDiag'
+module virtualMachineScaleSets '../../ResourceModules/modules/Microsoft.Compute/virtualMachineScaleSets/deploy.bicep' = {
   scope: RGAVDSTD
+  name: vmssHostName
   params: {
     location: location
     tags: tags
-    name: hostBootDiagStorageAccName
-    allowBlobPublicAccess: false
-    diagnosticLogsRetentionInDays: 7
-    diagnosticWorkspaceId: LAWorkspace.id
-    storageAccountSku: 'Standard_LRS'
-  }
-}
-
-
-//Create the VM hosts
-module AVDSTD '../ResourceModules/modules/Microsoft.Compute/virtualMachines/deploy.bicep' = [for i in range(0,hostPoolHostsToCreate): {
-  name: '${hostPoolHostNamePrefix}-${i+hostPoolHostsCurrentInstances}'
-  scope: RGAVDSTD
-  params: {
-    location: location
-    tags: tags
-    vmSize: hostPoolVMSize
+    skuName: vmssHostSize
     adminUsername: ADKeyVault.getSecret('ADAdminUsername')
     adminPassword: ADKeyVault.getSecret('ADAdminPassword')
-    name: '${hostPoolHostNamePrefix}-${i+hostPoolHostsCurrentInstances}'
     systemAssignedIdentity: true
+    name: vmssHostName
     imageReference: {
       id: ComputeGalleryImage.id
     }
-    // imageReference: {
-    //   offer: 'office-365'
-    //   publisher: 'MicrosoftWindowsDesktop'
-    //   sku: 'win10-22h2-avd-m365-g2'
-    //   version: 'latest'
-    // }
     osDisk: {
-      name: 'osdisk'
-      caching: 'ReadWrite'
-      createOption: 'FromImage'
-      deleteOption: 'Delete'
-      diskSizeGB: 128
+      createOption: 'fromImage'
+      diskSizeGB: '128'
       managedDisk: {
         storageAccountType: 'Premium_LRS'
       }
     }
     osType: 'Windows'
-    nicConfigurations: [
-      {
-        deleteOption: 'Delete'
-        enablePublicIp: false
-        enableAcceleratedNetworking: false
-        ipConfigurations: [
-          {
-            name: '${hostPoolHostNamePrefix}-${i+hostPoolHostsCurrentInstances}'
-            subnetResourceId: avdSubnet.id
-          }
-        ]
-        nicSuffix: '-nic-01'
-      }
-    ]
-
+    
+    // Non-required parameters
     monitoringWorkspaceId: LAWorkspace.id
     diagnosticWorkspaceId: LAWorkspace.id
-    nicdiagnosticMetricsToEnable: [
-      'AllMetrics'
-    ]
+    diagnosticLogsRetentionInDays: 7
 
-    bootDiagnostics: true
-    bootDiagnosticStorageAccountName: AVDHostBootDiag.outputs.name
-  
     extensionAntiMalwareConfig: {
       enabled: true
       settings: {
-        AntimalwareEnabled: 'true'
-        RealtimeProtectionEnabled: 'true'
+        AntimalwareEnabled: true
+        Exclusions: {
+          Extensions: '.log;.ldf'
+          Paths: 'D:\\IISlogs;D:\\DatabaseLogs'
+          Processes: 'mssence.svc'
+        }
+        RealtimeProtectionEnabled: true
         ScheduledScanSettings: {
           day: '7'
           isEnabled: 'true'
@@ -221,9 +175,6 @@ module AVDSTD '../ResourceModules/modules/Microsoft.Compute/virtualMachines/depl
         }
       }
     }
-
-    //Join the AD Domain server
-    //Domain join options - see https://learn.microsoft.com/en-gb/windows/win32/api/lmjoin/nf-lmjoin-netjoindomain
     extensionDomainJoinConfig: {
       enabled: true
       settings: {
@@ -245,6 +196,10 @@ module AVDSTD '../ResourceModules/modules/Microsoft.Compute/virtualMachines/depl
       enabled: false
     }
 
+    extensionDependencyAgentConfig: {
+      enabled: true
+    }
+
     extensionDSCConfig: {
       enabled: true
       settings: {
@@ -257,5 +212,24 @@ module AVDSTD '../ResourceModules/modules/Microsoft.Compute/virtualMachines/depl
       }
     }
 
+    nicConfigurations: [
+      {
+        ipConfigurations: [
+          {
+            name: vmssHostNamePrefix
+            properties: {
+              subnet: {
+                id: avdSubnet.id
+              }
+            }
+          }
+        ]
+        nicSuffix: '-nic-01'
+      }
+    ]
+    skuCapacity: 1
+    upgradePolicyMode: 'Manual'
+    vmNamePrefix: vmssHostNamePrefix
+    vmPriority: 'Regular'
   }
-}]
+}

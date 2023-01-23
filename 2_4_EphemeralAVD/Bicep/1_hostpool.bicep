@@ -93,7 +93,7 @@ param hostPoolVMSize object = {
 
 //Active Directory Settings
 @description('The name of the AD domain to join the hosts to')
-param adDomainName string = 'quberatron.com'
+param adDomainName string
 
 param adServerIPAddresses array = [
   '10.245.8.20'
@@ -189,7 +189,7 @@ resource BoundaryVnet 'Microsoft.Network/virtualNetworks@2022-07-01' existing = 
 }
 
 //Create the AVD NSG
-module avdNSG '../ResourceModules/modules/Microsoft.Network/networkSecurityGroups/deploy.bicep' = {
+module avdNSG '../../ResourceModules/modules/Microsoft.Network/networkSecurityGroups/deploy.bicep' = {
   name: 'boundaryNSGBastion'
   scope: RGAVDSTD
   params: {
@@ -221,7 +221,7 @@ module avdNSG '../ResourceModules/modules/Microsoft.Network/networkSecurityGroup
 }
 
 //Create the STD AVD VNET and subnet and peer to the AD subnet
-module AVDVnet '../ResourceModules/modules/Microsoft.Network/virtualNetworks/deploy.bicep' = {
+module AVDVnet '../../ResourceModules/modules/Microsoft.Network/virtualNetworks/deploy.bicep' = {
   name: 'boundaryVnet'
   scope: RGAVDSTD
   params: {
@@ -274,7 +274,7 @@ module AVDVnet '../ResourceModules/modules/Microsoft.Network/virtualNetworks/dep
 }
 
 //Create the host pool
-module DesktopHostPool '../ResourceModules/modules/Microsoft.DesktopVirtualization/hostpools/deploy.bicep' = {
+module DesktopHostPool '../../ResourceModules/modules/Microsoft.DesktopVirtualization/hostpools/deploy.bicep' = {
   name: 'DesktopHostPool'
   scope: RGAVDSTD
   params: {
@@ -304,7 +304,7 @@ module DesktopHostPool '../ResourceModules/modules/Microsoft.DesktopVirtualizati
 //ComputeGalleryDefinition.id
 
 //Create the application group
-module DesktopAppGroup '../ResourceModules/modules/Microsoft.DesktopVirtualization/applicationgroups/deploy.bicep' = {
+module DesktopAppGroup '../../ResourceModules/modules/Microsoft.DesktopVirtualization/applicationgroups/deploy.bicep' = {
   name: 'DesktopAppGroup'
   scope: RGAVDSTD
   params: {
@@ -318,7 +318,7 @@ module DesktopAppGroup '../ResourceModules/modules/Microsoft.DesktopVirtualizati
 }
 
 //Create the workspace
-module DesktopWorkspace '../ResourceModules/modules/Microsoft.DesktopVirtualization/workspaces/deploy.bicep' = {
+module DesktopWorkspace '../../ResourceModules/modules/Microsoft.DesktopVirtualization/workspaces/deploy.bicep' = {
   name: 'DesktopWorkspace'
   scope: RGAVDSTD
   params: {
