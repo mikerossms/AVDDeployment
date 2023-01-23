@@ -160,22 +160,8 @@ module virtualMachineScaleSets '../../ResourceModules/modules/Microsoft.Compute/
     diagnosticWorkspaceId: LAWorkspace.id
     diagnosticLogsRetentionInDays: 7
 
-    extensionDomainJoinConfig: {
-      enabled: true
-      settings: {
-        name: adDomainName
-        user: '${adDomainUsername}@${adDomainName}'
-        ouPath: adOUPath
-        restart: true
-        options: 3
-      }
-    }
-
-    extensionDomainJoinPassword: ADKeyVault.getSecret('ADAdminPassword')
-
-      //changed from true
     extensionMonitoringAgentConfig: {
-      enabled: false
+      enabled: true
     }
 
     extensionNetworkWatcherAgentConfig: {
@@ -184,6 +170,25 @@ module virtualMachineScaleSets '../../ResourceModules/modules/Microsoft.Compute/
 
     extensionDependencyAgentConfig: {
       enabled: true
+    }
+
+    extensionAntiMalwareConfig: {
+      enabled: true
+      settings: {
+        AntimalwareEnabled: true
+        Exclusions: {
+          Extensions: '.log;.ldf'
+          Paths: 'D:\\IISlogs;D:\\DatabaseLogs'
+          Processes: 'mssence.svc'
+        }
+        RealtimeProtectionEnabled: true
+        ScheduledScanSettings: {
+          day: '7'
+          isEnabled: 'true'
+          scanType: 'Quick'
+          time: '120'
+        }
+      }
     }
 
     nicConfigurations: [
@@ -211,40 +216,22 @@ module virtualMachineScaleSets '../../ResourceModules/modules/Microsoft.Compute/
 //The following extensions should be installable as part of the VMSS module, but for some reason including them causes the deployment to fail
 //with concurrency issues.  As a result, we need to install them in sequence rather than in parallel after VMSS has deployed
 
-//Install Antimalware extension - concurrent install issues if included as part of VMSS, so wait until VMSS is created and other extensions installed
-module virtualMachineScaleSetsExtAntiMal '../../ResourceModules/modules/Microsoft.Compute/virtualMachineScaleSets/extensions/deploy.bicep' = {
-  name: 'virtualMachineScaleSetsExtAntiMal'
+//Join the domain.  Due to a bug in the curated modules you cannot pass the password as a parameter, so we need to use a module
+module virtualMachineScaleSetsExtDomainJoin './module_JoinDomain.bicep' = {
+  name: 'virtualMachineScaleSetsExtDomainJoin'
   scope: RGAVDSTD
   params: {
-    virtualMachineScaleSetName: virtualMachineScaleSets.name
-    name: 'AntimalwareExtension'
-    publisher: 'Microsoft.Azure.Security'
-    type: 'IaaSAntimalware'
-    typeHandlerVersion: '1.3'
-    autoUpgradeMinorVersion: true
-    enableAutomaticUpgrade: false
-    settings: {
-      AntimalwareEnabled: true
-      Exclusions: {
-        Extensions: '.log;.ldf'
-        Paths: 'D:\\IISlogs;D:\\DatabaseLogs'
-        Processes: 'mssence.svc'
-      }
-      RealtimeProtectionEnabled: true
-      ScheduledScanSettings: {
-        day: '7'
-        isEnabled: 'true'
-        scanType: 'Quick'
-        time: '120'
-      }
-    }
-
+    vmssName: virtualMachineScaleSets.name
+    domainName: adDomainName
+    domainAdminPassword: ADKeyVault.getSecret('ADAdminPassword')
+    domainAdminUser: '${adDomainUsername}@${adDomainName}'
+    domainJoinOUPath: adOUPath
   }
   dependsOn: [
     virtualMachineScaleSets
+    //virtualMachineScaleSetsExtAntiMal
   ]
-} 
-
+}
 
 //Install DSC extension to connect VMSS to host pool - concurrent install issues if included as part of VMSS, so wait until VMSS is created and other extensions installed
 module virtualMachineScaleSetsExtDSC '../../ResourceModules/modules/Microsoft.Compute/virtualMachineScaleSets/extensions/deploy.bicep' = {
@@ -269,31 +256,31 @@ module virtualMachineScaleSetsExtDSC '../../ResourceModules/modules/Microsoft.Co
 
   }
   dependsOn: [
-    virtualMachineScaleSetsExtAntiMal
+    virtualMachineScaleSetsExtDomainJoin
   ]
 } 
 
 //Install Monitoring Agent on VMSS - concurrent install issues if included as part of VMSS, so wait until VMSS is created and other extensions installed
-module virtualMachineScaleSetsExtMonitoring '../../ResourceModules/modules/Microsoft.Compute/virtualMachineScaleSets/extensions/deploy.bicep' = {
-  name: 'virtualMachineScaleSetsExtMonitoring'
-  scope: RGAVDSTD
-  params: {
-    virtualMachineScaleSetName: virtualMachineScaleSets.name
-    name: 'MicrosoftMonitoringAgent'
-    publisher: 'Microsoft.EnterpriseCloud.Monitoring'
-    type: 'MicrosoftMonitoringAgent'
-    typeHandlerVersion: '1.7'
-    autoUpgradeMinorVersion: true
-    enableAutomaticUpgrade: false
-    settings: {
-      workspaceId: LAWorkspace.id 
-    }
-    protectedSettings: {
-      workspaceKey: LAWorkspace.listKeys().primarySharedKey
-    }
+// module virtualMachineScaleSetsExtMonitoring '../../ResourceModules/modules/Microsoft.Compute/virtualMachineScaleSets/extensions/deploy.bicep' = {
+//   name: 'virtualMachineScaleSetsExtMonitoring'
+//   scope: RGAVDSTD
+//   params: {
+//     virtualMachineScaleSetName: virtualMachineScaleSets.name
+//     name: 'MicrosoftMonitoringAgent'
+//     publisher: 'Microsoft.EnterpriseCloud.Monitoring'
+//     type: 'MicrosoftMonitoringAgent'
+//     typeHandlerVersion: '1.7'
+//     autoUpgradeMinorVersion: true
+//     enableAutomaticUpgrade: false
+//     settings: {
+//       workspaceId: LAWorkspace.id 
+//     }
+//     protectedSettings: {
+//       workspaceKey: LAWorkspace.listKeys().primarySharedKey
+//     }
 
-  }
-  dependsOn: [
-    virtualMachineScaleSetsExtDSC
-  ]
-} 
+//   }
+//   dependsOn: [
+//     virtualMachineScaleSetsExtDSC
+//   ]
+// } 

@@ -85,11 +85,11 @@ if ($deployHostPool) {
     }
 
     if ($er) {
-        Write-Host "ERROR: Failed to deploy the hostpool" -ForegroundColor Red
+        Write-Host "ERROR: Failed to deploy the VMSS" -ForegroundColor Red
         #Write-Host $er
         exit 1
     } else {
-        Write-Host "Hostpool deployed successfully" -ForegroundColor Green
+        Write-Host "VMSS deployed successfully" -ForegroundColor Green
     }
 }
 
