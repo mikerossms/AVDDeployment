@@ -1,0 +1,48 @@
+trigger:
+  - master
+  - schedule:
+      cron: "0 0 12 15 * 3"
+      filters:
+        paths:
+          include:
+            - path/to/powershell/script.ps1
+
+pool:
+  vmImage: 'windows-latest'
+
+steps:
+- task: PowerShell@2
+  inputs:
+    targetType: 'inline'
+    script: |
+      # Run the PowerShell script that generates the image
+      & path/to/powershell/script.ps1
+
+- task: PublishBuildArtifacts@1
+  inputs:
+    PathtoPublish: 'path/to/image'
+    ArtifactName: 'Image'
+    publishLocation: 'Container'
+
+- task: Approval@1
+  inputs:
+    # The name of the subscription to deploy to
+    subscription: '$(Subscription)'
+    # The name of the resource group to deploy to
+    resourceGroup: '$(ResourceGroup)'
+    # Require the approval of a specific user or group
+    # For example: '@Microsoft.RequesterId == [YourID]'
+    # Leave empty to require the approval of any user
+    approvals: '$(Approvers)'
+    # Only run this step if the subscription is 'PROD'
+    condition: eq(variables['Subscription'], 'PROD')
+
+- task: PowerShell@2
+  inputs:
+    targetType: 'inline'
+    script: |
+      # Login to Azure
+      az login -u $(AZURE_USER) -p $(AZURE_PASS) --tenant $(AZURE_TENANT)
+      # Deploy the image
+      az deployment group create -g $(ResourceGroup) --subscription $(Subscription) --template-file $(System.DefaultWorkingDirectory)/path/to/your-template.json --parameters imageUri=$(System.DefaultWorkingDirectory)/path/to/image
+    condition: eq(variables['Subscription'], 'PROD') && succeeded()

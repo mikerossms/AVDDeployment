@@ -1,0 +1,27 @@
+# Azure DevOps YAML pipeline template for deploying a BICEP file at subscription level
+# $(AZURE_USER), $(AZURE_PASS), $(AZURE_TENANT) and $(AZURE_SUBSCRIPTION) need to be defined as variables
+
+trigger:
+  - master
+
+pool:
+  vmImage: 'windows-latest'
+
+steps:
+
+- task: PowerShell@2
+  inputs:
+    targetType: 'inline'
+    script: |
+      # Install Azure CLI
+      Install-Module -Name Az -AllowClobber -Scope CurrentUser
+      # Login to Azure
+      az login -u $(AZURE_USER) -p $(AZURE_PASS) --tenant $(AZURE_TENANT)
+      # Deploy BICEP file
+      az deployment create --name $(DeploymentName) --subscription $(AZURE_SUBSCRIPTION) --template-file $(System.DefaultWorkingDirectory)/path/to/your-bicep-file.bicep
+
+- task: PublishBuildArtifacts@1
+  inputs:
+    PathtoPublish: '$(System.DefaultWorkingDirectory)/path/to/your-bicep-file.bicep'
+    ArtifactName: 'BICEP'
+    publishLocation: 'Container'
