@@ -109,26 +109,31 @@ if ($sessionCount -gt 0) {
 }
 
 #Remove all host pool hosts
-Write-Host "Removing all host pool hosts" -ForegroundColor Yellow
-foreach ($hostObject in $hosts) {
-    #$hostObject    | convertto-json
-    $hostName = ($hostObject.Name).split('/')[1]
-    if (-not $dryrun) {
-        Write-Host "Remove Hostpool host: $($hostName)" -ForegroundColor Yellow
-        Remove-AzWvdSessionHost -ResourceGroupName $hpRG -HostPoolName $hpName -Name $($hostName)
-    } else {
-        Write-Host "DRYRUN: Remove Hostpool host: $($hostName)" -ForegroundColor Yellow
+if ($hosts.Count -gt 0) {
+    Write-Host "Removing all host pool hosts" -ForegroundColor Yellow
+    foreach ($hostObject in $hosts) {
+        #$hostObject    | convertto-json
+        $hostName = ($hostObject.Name).split('/')[1]
+        if (-not $dryrun) {
+            Write-Host "Remove Hostpool host: $($hostName)" -ForegroundColor Yellow
+            Remove-AzWvdSessionHost -ResourceGroupName $hpRG -HostPoolName $hpName -Name $($hostName)
+        } else {
+            Write-Host "DRYRUN: Remove Hostpool host: $($hostName)" -ForegroundColor Yellow
+        }
     }
 }
 
-
 #Scale the VMSS to zero
-if (-not $dryrun) {
-    Write-Host "Scaling the VMSS to zero" -ForegroundColor Yellow
-    $vmss.Sku.capacity = 0
-    Update-AzVmss -ResourceGroupName $vmssRG -Name $vmssName -VirtualMachineScaleSet $vmss
+if ($instanceCount -gt 0) {
+    if (-not $dryrun) {
+        Write-Host "Scaling the VMSS to zero" -ForegroundColor Yellow
+        $vmss.Sku.capacity = 0
+        Update-AzVmss -ResourceGroupName $vmssRG -Name $vmssName -VirtualMachineScaleSet $vmss
+    } else {
+        Write-Host "DRYRUN: Scaling the VMSS to zero" -ForegroundColor Yellow
+    }
 } else {
-    Write-Host "DRYRUN: Scaling the VMSS to zero" -ForegroundColor Yellow
+    Write-Host "The VMSS is already scaled to zero" -ForegroundColor Green
 }
 
 #Rotate the hostpool key
@@ -152,8 +157,8 @@ if ($dryrun) {
     Write-Host "DRYRUN: Deleting the DSC extension" -ForegroundColor Yellow
 } else {
     Write-Host "Deleting the DSC extension" -ForegroundColor Green
-    Remove-AzVmssExtension -VirtualMachineScaleSet $vmss -Name "DesiredStateConfiguration"
-    Update-AzVmss -ResourceGroupName $vmssRG -Name $vmssName -VirtualMachineScaleSet $vmss
+    $vmss = Remove-AzVmssExtension -VirtualMachineScaleSet $vmss -Name "DesiredStateConfiguration"
+    $vmss = Update-AzVmss -ResourceGroupName $vmssRG -Name $vmssName -VirtualMachineScaleSet $vmss
 }
 
 #Re-add the DSC extension with the new HostPool token
@@ -161,41 +166,31 @@ if ($dryrun) {
     Write-Host "DRYRUN: Re-adding the DSC extension with the new host pool token" -ForegroundColor Yellow
 } else {
     Write-Host "Re-adding the DSC extension with the new host pool token" -ForegroundColor Green
-    $publicSettings =  @{
+    $settings = @{
         modulesUrl = "https://wvdportalstorageblob.blob.core.windows.net/galleryartifacts/Configuration.zip"
-        configurationFunction = "Configuration.ps1\\AddSessionHost"
+        configurationFunction = "Configuration.ps1\AddSessionHost"
         properties = @{
-            HostPoolName = $hpName
-            RegistrationInfoToken = $hpToken
+            hostPoolName = $hpName
+            registrationInfoToken = [string]$hpToken
         }
     }
 
-    Add-AzVmssExtension -VirtualMachineScaleSet $vmss -Name "DesiredStateConfiguration" -Publisher "Microsoft.Powershell"  `
-        -Type "DSC" -TypeHandlerVersion "2.77" -AutoUpgradeMinorVersion $True  `
-        -Setting $publicSettings
-   
-    Update-AzVmss -ResourceGroupName $vmssRG -Name $vmssName -VirtualMachineScaleSet $vmss
+    $vmss = Add-AzVmssExtension -VirtualMachineScaleSet $vmss `
+        -Name "DesiredStateConfiguration" `
+        -Publisher "Microsoft.Powershell" `
+        -Type "DSC" `
+        -TypeHandlerVersion "2.76" `
+        -Setting $settings
+    $vmss = Update-AzVmss -ResourceGroupName $vmssRG -Name $vmssName -VirtualMachineScaleSet $vmss
 }
 
-#Update the DSC extension in the VMSS with the new key (needs to be deserialised and reserialised)
-#$dscExtensionConfig = ($vmss.VirtualMachineProfile.ExtensionProfile.Extensions | Where-Object {$_.Name -eq "DesiredStateConfiguration"} |ConvertTo-Json |ConvertFrom-Json).Settings
-#(Get-AzVmssExtension -ResourceGroupName $vmssRG -VMScaleSetName $vmssName -Name "DSC").PublicSettings
-
-# Update the hostpool key
-#$dscExtensionConfig[0].properties.RegistrationInfoToken = $hpToken
-
-# Update the DSC extension
-# if ($dryrun) {
-#     Write-Host "DRYRUN: Updating the DSC extension with the new host pool token" -ForegroundColor Yellow
-# } else {
-#     Write-Host "Updating the DSC extension with the new host pool token" -ForegroundColor Green
-#     #Update-AzVmss -ResourceGroupName $vmssRG -VMScaleSetName $vmssName -Name "DesiredStateConfiguration"
-#     #-ResourceGroupName $vmssRG -VMScaleSetName $vmssName -Name "DSC" -PublicSettings $dscExtensionConfig.configuration -TypeHandlerVersion $dscExtensionConfig.typeHandlerVersion
-# }
-
 #Scale the VMSS back up
-# if (-not $dryrun) {
-#     Write-Host "Scaling the VMSS back up to $instanceCount - this might take some time" -ForegroundColor Yellow
-#     Update-AzVmss -ResourceGroupName $vmssRG -VMScaleSetName $vmssName -Capacity $instanceCount
-# }
+if ($instanceCount -gt 0) {
+    if (-not $dryrun) {
+        Write-Host "Scaling the VMSS back up to $instanceCount - this might take some time" -ForegroundColor Yellow
+        $vmss.Sku.capacity = $instanceCount
+        $vmss = Update-AzVmss -ResourceGroupName $vmssRG -Name $vmssName -VirtualMachineScaleSet $vmss
+    }
+}
 
+Write-Host "Finished" -ForegroundColor Green
